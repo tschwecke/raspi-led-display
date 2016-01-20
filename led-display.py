@@ -13,20 +13,22 @@ from rgbmatrix import Adafruit_RGBmatrix
 
 messages = [
   'Happy Birthday!!!',
-  'The Big 4 0' ]
+  'The Big 4 0', 'Holy smokes, it works.', 'WOW' ]
 
 width          = 32  # Matrix size (pixels) -- change for different matrix
 height         = 32  # types (incl. tiling).  Other code may need tweaks.
 matrix         = Adafruit_RGBmatrix(32, 1) # rows, chain length
-fps            = 20  # Scrolling speed (ish)
+fps            = 10  # Scrolling speed (ish)
 
-routeColor     = (255, 255, 255) # Color for route labels (usu. numbers)
-descColor      = (110, 110, 110) # " for route direction/description
-longTimeColor  = (  0, 255,   0) # Ample arrival time = green
-midTimeColor   = (255, 255,   0) # Medium arrival time = yellow
-shortTimeColor = (255,   0,   0) # Short arrival time = red
-minsColor      = (110, 110, 110) # Commans and 'minutes' labels
-noTimesColor   = (  0,   0, 255) # No predictions = blue
+
+colors = [
+  (255, 255, 255),
+  (110, 110, 110),
+  (  0, 255,   0),
+  (255, 255,   0), 
+  (255,   0,   0), 
+  (110, 110, 110), 
+  (  0,   0, 255)]
 
 # TrueType fonts are a bit too much for the Pi to handle -- slow updates and
 # it's hard to get them looking good at small sizes.  A small bitmap version
@@ -64,13 +66,14 @@ tileWidth += 6                         # Allow extra space between tiles
 
 
 class tile:
-	def __init__(self, x, y, p):
+	def __init__(self, x, y, message, color):
 		self.x = x
 		self.y = y
 		self.message = message  # Corresponding messages[] object
+		self.color = color
 
 	def draw(self):
-		draw.text((self.x, self.y + fontYoffset), self.message, font=font, fill=routeColor)
+		draw.text((self.x, self.y + fontYoffset), self.message, font=font, fill=self.color)
 
 
 
@@ -80,10 +83,14 @@ if tileWidth >= width: tilesAcross = 2
 else:                  tilesAcross = int(math.ceil(width / tileWidth)) + 1
 
 nextMessage = 0  # Index of messages item to attach to tile
+nextColor = 0
 for x in xrange(tilesAcross):
 	for y in xrange(0, 2):
 		tileList.append(tile(x * tileWidth + y * tileWidth / 2,
-		  y * 17, messages[nextMessage]))
+		  y * 17, messages[nextMessage], colors[nextColor]))
+		nextColor += 1
+		if nextColor >= len(colors):
+			nextColor = 0
 		nextMessage += 1
 		if nextMessage >= len(messages):
 			nextMessage = 0
@@ -101,8 +108,12 @@ while True:
 		if(t.x <= -tileWidth): # Off left edge?
 			t.x += tileWidth * tilesAcross     # Move off right &
 			t.message = messages[nextMessage] # assign prediction
+			t.color = colors[nextColor]
+			nextColor += 1 
+			if nextColor >= len(colors):
+				nextColor = 0
 			nextMessage += 1                # Cycle predictions
-			if nextMessage >= len(predictList):
+			if nextMessage >= len(messages):
 				nextMessage = 0
 
 	# Try to keep timing uniform-ish; rather than sleeping a fixed time,
